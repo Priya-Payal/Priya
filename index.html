@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Priya Payal Behera | ICU Registered Nurse</title>
+<!-- Added FontAwesome for the heartbeat logo -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --teal: #0d9373;
+    --teal-light: #e0f5ef;
+    --teal-dark: #085c49;
+    --navy: #0a1628;
+    --navy-mid: #112240;
+    --slate: #1e3a5f;
+    --text-primary: #f0f4f8;
+    --text-muted: #8fa8c8;
+    --text-accent: #4ecfa8;
+    --card-bg: rgba(255,255,255,0.04);
+    --card-border: rgba(78,207,168,0.18);
+    --pulse-color: #4ecfa8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--navy);
+    color: var(--text-primary);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* INTERACTIVE ECG BACKGROUND */
+  #ecg-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    z-index: -1;
+    opacity: 0.15;
+    pointer-events: none;
+  }
+
+  /* CUSTOM CURSOR */
+  .cursor {
+    width: 8px; height: 8px;
+    background: var(--pulse-color);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 10000;
+    transition: transform 0.1s;
+    mix-blend-mode: screen;
+  }
+  .cursor-ring {
+    width: 32px; height: 32px;
+    border: 1px solid rgba(78,207,168,0.5);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    transition: transform 0.25s ease, width 0.2s, height 0.2s;
+    margin: -12px 0 0 -12px;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.2rem 3rem;
+    background: rgba(10,22,40,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(78,207,168,0.1);
+  }
+  .nav-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.2rem;
+    letter-spacing: 0.03em;
+    color: var(--text-accent);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* --- ADD THESE TWO NEW BLOCKS --- */
+  .nav-divider {
+    color: rgba(78, 207, 168, 0.4); /* Faded teal color */
+    margin: 0 6px;
+    font-weight: 300;
+  }
+  
+  .nav-tagline {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  /* -------------------------------- */
+  /* PULSATING HEARTBEAT LOGO CSS */
+  .heartbeat-icon {
+    color: #ff0055;
+    animation: pulseHeart 1.5s infinite;
+  }
+  @keyframes pulseHeart {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+
+  .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+  .nav-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.82rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: color 0.3s;
+  }
+  .nav-links a:hover { color: var(--text-accent); }
+
+  /* ECG TOP BAR */
+  .ecg-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    z-index: 1001;
+    overflow: hidden;
+  }
+  .ecg-bar svg { width: 200%; height: 3px; animation: ecgScroll 3s linear infinite; }
+  @keyframes ecgScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    padding: 8rem 6rem 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-bg-grid {
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(rgba(78,207,168,0.04) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(78,207,168,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+  }
+  .hero-glow {
+    position: absolute;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(13,147,115,0.12) 0%, transparent 70%);
+    right: -100px; top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-accent);
+    margin-bottom: 1.5rem;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    width: 32px; height: 1px;
+    background: var(--text-accent);
+  }
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(3rem, 5vw, 5rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.3rem;
+  }
+  .hero h1 em { font-style: italic; color: var(--text-accent); }
+/* --- ADDED TYPING EFFECT STYLES --- */
+  .hero-typing-wrapper {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--text-accent); /* Matches the teal theme */
+    letter-spacing: 0.05em;
+    margin-top: 0.5rem;
+    min-height: 1.8em; /* Prevents text below from jumping up and down */
+    display: flex;
+    align-items: center;
+  }
+  .typing-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1.1em;
+    background-color: var(--text-accent);
+    margin-left: 6px;
+    animation: blinkCursor 0.8s step-end infinite;
+  }
+  @keyframes blinkCursor {
+    50% { opacity: 0; }
+  }
+  /* --------------------------------- */
+  .hero-title-badge {
+    display: inline-block;
+    background: rgba(78,207,168,0.12);
+    border: 1px solid rgba(78,207,168,0.3);
+    color: var(--text-accent);
+    font-size: 0.78rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.4rem 1rem;
+    border-radius: 2px;
+    margin: 1.2rem 0 1.5rem;
+  }
+    .hero-summary {
+    color: var(--text-muted);
+    font-size: 1.0rem;
+    line-height: 1.8;
+    max-width: 440px;
+    margin-bottom: 2.5rem;
+    text-align: justify; /* THIS ALIGNS BOTH SIDES PERFECTLY */
+  }
+  .hero-cta { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--teal);
+    color: white;
+    border: none;
+    padding: 0.9rem 2rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: none;
+    text-decoration: none;
+    transition: background 0.3s, transform 0.2s;
+    display: inline-block;
+  }
+  .btn-primary:hover { background: var(--teal-dark); transform: translateY(-2px); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 0.9rem 2rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: none;
+    text-decoration: none;
+    transition: border-color 0.3s, color 0.3s;
+    display: inline-block;
+  }
+  .btn-ghost:hover { border-color: var(--text-accent); color: var(--text-accent); }
+
+  /* HERO RIGHT */
+  .hero-right {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    position: relative;
+  }
+  .photo-frame {
+    width: 280px; height: 340px;
+    background: linear-gradient(135deg, rgba(13,147,115,0.2), rgba(78,207,168,0.05));
+    border: 1px solid rgba(78,207,168,0.25);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .photo-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-muted);
+  }
+  .photo-placeholder .icon {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: rgba(78,207,168,0.1);
+    border: 1px solid rgba(78,207,168,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem;
+  }
+  .photo-placeholder p { font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-accent); }
+  .photo-corner {
+    position: absolute;
+    width: 18px; height: 18px;
+    border-color: var(--text-accent);
+    border-style: solid;
+    opacity: 0.6;
+  }
+  .photo-corner.tl { top: 8px; left: 8px; border-width: 1px 0 0 1px; }
+  .photo-corner.tr { top: 8px; right: 8px; border-width: 1px 1px 0 0; }
+  .photo-corner.bl { bottom: 8px; left: 8px; border-width: 0 0 1px 1px; }
+  .photo-corner.br { bottom: 8px; right: 8px; border-width: 0 1px 1px 0; }
+
+  .vitals-strip { display: flex; gap: 1rem; width: 100%; max-width: 340px; }
+  .vital-card {
+    flex: 1;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 4px;
+    padding: 0.8rem;
+    text-align: center;
+  }
+  .vital-label { font-size: 0.62rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  .vital-value { font-size: 1.4rem; font-weight: 500; color: var(--text-accent); }
+  .vital-unit { font-size: 0.65rem; color: var(--text-muted); }
+
+  /* PULSE RING */
+  .pulse-ring { position: absolute; top: -20px; right: -20px; width: 80px; height: 80px; }
+  .pulse-ring circle {
+    fill: none;
+    stroke: var(--text-accent);
+    stroke-width: 1;
+    animation: pulseRing 2s ease-out infinite;
+    transform-origin: center;
+  }
+  .pulse-ring circle:nth-child(2) { animation-delay: 0.5s; }
+  .pulse-ring circle:nth-child(3) { animation-delay: 1s; }
+  @keyframes pulseRing {
+    0% { r: 8; opacity: 0.8; }
+    100% { r: 38; opacity: 0; }
+  }
+
+  /* SECTIONS */
+  section { padding: 6rem 6rem; position: relative; }
+  .section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-accent);
+    margin-bottom: 1rem;
+  }
+  .section-label::before { content: ''; width: 24px; height: 1px; background: var(--text-accent); }
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2rem, 3.5vw, 3rem);
+    line-height: 1.1;
+    margin-bottom: 3rem;
+  }
+
+  /* DIVIDER */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(78,207,168,0.2), transparent);
+    margin: 0 6rem;
+  }
+
+  /* EXPERIENCE */
+  .exp-grid { display: flex; flex-direction: column; gap: 2rem; }
+  .exp-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 4px;
+    padding: 2rem 2.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+  .exp-card:hover { border-color: rgba(78,207,168,0.5); transform: translateX(6px); }
+  .exp-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--text-accent);
+  }
+  .exp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .exp-role { font-family: 'DM Serif Display', serif; font-size: 1.3rem; }
+  .exp-badge {
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.8rem;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .badge-current { background: rgba(78,207,168,0.15); color: var(--text-accent); border: 1px solid rgba(78,207,168,0.3); }
+  .badge-past { background: rgba(143,168,200,0.1); color: var(--text-muted); border: 1px solid rgba(143,168,200,0.2); }
+  .exp-org { color: var(--text-accent); font-size: 0.88rem; margin-bottom: 0.3rem; }
+  .exp-period { color: var(--text-muted); font-size: 0.78rem; letter-spacing: 0.08em; margin-bottom: 1.2rem; }
+  .exp-bullets { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+  .exp-bullets li {
+    font-size: 0.88rem;
+    color: #a0b4cc;
+    line-height: 1.6;
+    padding-left: 1.2rem;
+    position: relative;
+  }
+  .exp-bullets li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--text-accent);
+    font-size: 0.75rem;
+  }
+
+  /* SKILLS */
+  .skills-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start; }
+  .skill-category { margin-bottom: 2rem; }
+  .skill-cat-title {
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(78,207,168,0.1);
+  }
+  .skill-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .skill-tag {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 0.35rem 0.9rem;
+    border-radius: 2px;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+    cursor: default;
+  }
+  .skill-tag:hover { border-color: rgba(78,207,168,0.4); color: var(--text-accent); background: rgba(78,207,168,0.06); }
+
+  /* PROCEDURES */
+  .procedures-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  .procedure-item {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 4px;
+    padding: 1rem 1.2rem;
+    font-size: 0.83rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .procedure-item:hover { border-color: rgba(78,207,168,0.4); color: var(--text-primary); }
+  .procedure-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-accent); flex-shrink: 0; }
+
+  /* EQUIPMENT */
+  .equipment-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
+  .equipment-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 4px;
+    padding: 1.2rem;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    transition: all 0.2s;
+  }
+  .equipment-card:hover { border-color: rgba(78,207,168,0.4); background: rgba(78,207,168,0.05); color: var(--text-primary); }
+  .equipment-icon { font-size: 1.4rem; margin-bottom: 0.5rem; display: block; }
+
+  /* GALLERY */
+/* GALLERY SLIDER */
+  .photo-section { padding: 6rem; background: rgba(255,255,255,0.01); }
+  .gallery-slider-wrapper {
+    position: relative;
+    margin-top: 2rem;
+    display: flex;
+    align-items: center;
+  }
+  .gallery-track {
+    display: flex;
+    gap: 1.5rem;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scrollbar-width: none; /* Hides scrollbar on Firefox */
+    -ms-overflow-style: none; /* Hides scrollbar on IE/Edge */
+    padding: 1rem 0; /* Room for hover shadows */
+    width: 100%;
+  }
+  .gallery-track::-webkit-scrollbar {
+    display: none; /* Hides scrollbar on Chrome/Safari */
+  }
+  .gallery-item {
+    flex: 0 0 300px; /* Fixed width for each slide */
+    height: 350px;
+    background: rgba(78,207,168,0.04);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .gallery-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+  }
+  .gallery-item img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    position: absolute; inset: 0; z-index: 1; transition: opacity 0.3s;
+  }
+  .gallery-placeholder {
+    color: var(--text-muted); text-align: center; padding: 1rem; z-index: 0;
+  }
+  .gallery-placeholder .ph-icon { font-size: 2rem; margin-bottom: 0.5rem; display: block; opacity: 0.4; }
+  .gallery-placeholder p { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.5; }
+  .gallery-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(10,22,40,0.9), transparent);
+    opacity: 0; transition: opacity 0.3s;
+    display: flex; align-items: flex-end; padding: 1.5rem;
+    z-index: 2; /* Sits above the image */
+  }
+  .gallery-item:hover .gallery-overlay { opacity: 1; }
+  .gallery-caption { font-size: 0.85rem; color: white; font-weight: 500; }
+
+  /* SLIDER BUTTONS */
+  .slider-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 45px; height: 45px;
+    border-radius: 50%;
+    background: var(--teal);
+    color: white;
+    border: none;
+    font-size: 1.2rem;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    transition: background 0.3s, opacity 0.3s, transform 0.2s;
+  }
+  .slider-btn:hover { background: var(--text-accent); transform: translateY(-50%) scale(1.1); }
+  .slider-btn.disabled { opacity: 0; pointer-events: none; }
+  .left-btn { left: -20px; }
+  .right-btn { right: -20px; }
+
+  /* EDUCATION */
+  .edu-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 4px;
+    padding: 2rem 2.5rem;
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+  }
+  .edu-icon-box {
+    width: 52px; height: 52px;
+    border-radius: 4px;
+    background: rgba(78,207,168,0.1);
+    border: 1px solid rgba(78,207,168,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+  .edu-degree { font-family: 'DM Serif Display', serif; font-size: 1.2rem; margin-bottom: 0.3rem; }
+  .edu-school { color: var(--text-accent); font-size: 0.88rem; margin-bottom: 0.3rem; }
+  .edu-date { color: var(--text-muted); font-size: 0.78rem; }
+
+  /* LANGUAGES */
+  .lang-grid { display: flex; gap: 2rem; flex-wrap: wrap; }
+  .lang-card {
+    flex: 1;
+    min-width: 160px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 4px;
+    padding: 1.5rem;
+  }
+  .lang-name { font-size: 1rem; font-weight: 500; margin-bottom: 0.5rem; }
+  .lang-level { font-size: 0.75rem; color: var(--text-accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.8rem; }
+  .lang-bar { height: 2px; background: rgba(255,255,255,0.08); border-radius: 1px; }
+  .lang-fill { height: 2px; background: var(--text-accent); border-radius: 1px; transition: width 1.5s ease; }
+
+  /* CONTACT */
+/* --- YOUTUBE PROMO BANNER --- */
+  .yt-promo {
+    margin: 4rem auto 0;
+    max-width: 550px;
+    background: rgba(255, 0, 0, 0.02); /* Very subtle red glass background */
+    border: 1px solid rgba(255, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .yt-promo:hover {
+    transform: translateY(-5px);
+    border-color: rgba(255, 0, 0, 0.5);
+    box-shadow: 0 10px 30px rgba(255, 0, 0, 0.1);
+  }
+  .yt-promo-icon {
+    font-size: 2.8rem;
+    color: #ff0000;
+    margin-bottom: 1rem;
+    /* Reusing the heartbeat animation so the YouTube button beats! */
+    animation: pulseHeart 2s infinite; 
+  }
+  .yt-promo-text {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    margin-bottom: 1.8rem;
+    line-height: 1.7;
+  }
+  .yt-promo-text strong {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+  .yt-promo-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: #ff0000;
+    color: #ffffff;
+    padding: 0.9rem 2rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: background 0.3s, transform 0.2s;
+  }
+  .yt-promo-btn:hover {
+    background: #cc0000;
+    transform: scale(1.05);
+  }
+  /* ---------------------------- */
+  .contact-section { padding: 6rem; text-align: center; position: relative; }
+  .contact-glow {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, rgba(13,147,115,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .contact-section .section-label { justify-content: center; }
+  .contact-section .section-label::before { display: none; }
+  .contact-section .section-title { text-align: center; }
+  .contact-links { display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; margin-top: 2rem; }
+  .contact-link {
+    display: flex; align-items: center; gap: 0.6rem;
+    color: var(--text-muted); text-decoration: none;
+    font-size: 0.88rem; transition: color 0.2s;
+  }
+  .contact-link:hover { color: var(--text-accent); }
+  .contact-link-icon {
+    width: 36px; height: 36px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; transition: border-color 0.2s;
+  }
+  .contact-link:hover .contact-link-icon { border-color: var(--text-accent); }
+
+  .footer-bar {
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 1.5rem 6rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  /* SCROLL REVEAL */
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease, transform 0.8s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; padding: 7rem 2rem 3rem; gap: 3rem; }
+    .hero-right { display: none; }
+    .nav-tagline, .nav-divider { display: none; }
+    section { padding: 4rem 2rem; }
+    .divider { margin: 0 2rem; }
+    .skills-wrapper { grid-template-columns: 1fr; }
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { gap: 1.5rem; }
+    .gallery-grid { grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
+    .gallery-item:first-child { grid-row: span 1; grid-column: span 2; }
+    .photo-section { padding: 4rem 2rem; }
+    .left-btn { left: 5px; }
+    .right-btn { right: 5px; }
+    .gallery-item { flex: 0 0 260px; height: 300px; }
+    .contact-section { padding: 4rem 2rem; }
+    .footer-bar { padding: 1.5rem 2rem; flex-direction: column; gap: 0.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ADDED INTERACTIVE ECG CANVAS BACKGROUND -->
+<canvas id="ecg-canvas"></canvas>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursor-ring"></div>
+
+<!-- ECG TOP BAR -->
+<div class="ecg-bar">
+  <svg viewBox="0 0 400 3" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+    <polyline fill="none" stroke="#4ecfa8" stroke-width="1.5"
+      points="0,1.5 30,1.5 40,1.5 45,0.2 50,2.8 55,0.2 60,1.5 70,1.5 80,1.5 90,0.5 95,1.5 130,1.5 140,1.5 145,0.2 150,2.8 155,0.2 160,1.5 170,1.5 180,1.5 190,0.5 195,1.5 230,1.5 240,1.5 245,0.2 250,2.8 255,0.2 260,1.5 270,1.5 280,1.5 290,0.5 295,1.5 330,1.5 340,1.5 345,0.2 350,2.8 355,0.2 360,1.5 370,1.5 380,1.5 390,0.5 395,1.5 400,1.5"/>
+  </svg>
+</div>
+
+<!-- NAV -->
+<nav>
+  <!-- ADDED PULSATING HEART LOGO -->
+<!-- ADDED PULSATING HEART LOGO & TAGLINE -->
+  <div class="nav-logo">
+    <i class="fas fa-heart-pulse heartbeat-icon"></i> PPB 
+    <span class="nav-divider">|</span> 
+    <span class="nav-tagline">Precision in Every Pulse</span>
+  </div>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#experience">Experience</a></li>
+    <li><a href="#skills">Skills</a></li>
+    <li><a href="#procedures">Procedures</a></li>
+    <li><a href="#gallery">Gallery</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="home">
+  <div class="hero-bg-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">ICU Registered Nurse</div>
+    <h1>Priya <em>Payal</em><br>Behera</h1>
+    <!-- ADDED TYPING EFFECT HERE -->
+    <div class="hero-typing-wrapper">
+      <span id="typing-text"></span><span class="typing-cursor"></span>
+    </div>
+    <!-- -------------------------- -->
+    <div class="hero-title-badge">RN · Critical Care · Bhubaneswar, Odisha</div>
+    <p class="hero-summary">
+      Dedicated nursing professional with hands-on experience in critical care settings. Skilled in monitoring vital signs, administering medications, and collaborating with interdisciplinary teams to ensure optimal patient care and safety.
+    </p>
+    <div class="hero-cta">
+      <a href="#experience" class="btn-primary">View Experience</a>
+      <a href="#contact" class="btn-ghost">Get in Touch</a>
+    </div>
+  </div>
+ <div class="hero-right">
+    <div style="position: relative;">
+      <svg class="pulse-ring" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="40" cy="40" r="8"/>
+        <circle cx="40" cy="40" r="8"/>
+        <circle cx="40" cy="40" r="8"/>
+      </svg>
+      <div class="photo-frame" id="hero-photo">
+        
+        <!-- REMOVED THE ALT TEXT LABEL -->
+        <img src="Gallery/7.jpeg" alt="">
+
+        <!-- Keep these corner graphics! -->
+        <div class="photo-corner tl"></div>
+        <div class="photo-corner tr"></div>
+        <div class="photo-corner bl"></div>
+        <div class="photo-corner br"></div>
+      </div>
+    </div>
+    <div class="vitals-strip">
+      <div class="vital-card">
+        <div class="vital-label">Experience</div>
+        <div class="vital-value">1+</div>
+        <div class="vital-unit">Years ICU</div>
+      </div>
+      <div class="vital-card">
+        <div class="vital-label">Procedures</div>
+        <div class="vital-value">12+</div>
+        <div class="vital-unit">Mastered</div>
+      </div>
+      <div class="vital-card">
+        <div class="vital-label">Equipment</div>
+        <div class="vital-value">14+</div>
+        <div class="vital-unit">Proficient</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- EXPERIENCE -->
+<section id="experience">
+  <div class="reveal">
+    <div class="section-label">Career Timeline</div>
+    <h2 class="section-title">Clinical Experience</h2>
+  </div>
+  <div class="exp-grid">
+    <div class="exp-card reveal">
+      <div class="exp-header">
+        <div class="exp-role">Registered Nurse — Intensive Care Unit</div>
+        <span class="exp-badge badge-current">Current</span>
+      </div>
+      <div class="exp-org">Blue Wheel Hospital</div>
+      <div class="exp-period">August 2025 – Present · Bhubaneswar, Odisha</div>
+      <ul class="exp-bullets">
+        <li>Provided care to critically ill patients in a fast-paced ICU environment</li>
+        <li>Monitored vital signs and administered medications in critical care settings</li>
+        <li>Collaborated with medical team to create and implement patient-centered care plans</li>
+        <li>Responded swiftly to emergency situations, ensuring patient safety and comfort</li>
+        <li>Assisted in complex procedures and provided immediate post-operative care</li>
+        <li>Performed bedside procedures: wound dressing changes, catheterizations, IV starts, tracheostomy care</li>
+        <li>Implemented infection control measures to maintain a sterile environment</li>
+        <li>Educated patients and families on treatment plans and recovery processes</li>
+        <li>Participated in quality improvement initiatives for ICU care standards</li>
+      </ul>
+    </div>
+    <div class="exp-card reveal">
+      <div class="exp-header">
+        <div class="exp-role">Intern Staff Nurse</div>
+        <span class="exp-badge badge-past">Past</span>
+      </div>
+      <div class="exp-org">Blue Wheel Hospital</div>
+      <div class="exp-period">January 2025 – July 2025 · Bhubaneswar, Odisha</div>
+      <ul class="exp-bullets">
+        <li>Monitored vital signs and reported changes to senior nursing staff</li>
+        <li>Collaborated with healthcare team to ensure quality patient care delivery</li>
+        <li>Provided emotional support, fostering trust and overall well-being</li>
+        <li>Assisted with daily living activities: eating, grooming, toileting, ambulation</li>
+        <li>Recorded patient information in electronic health records (EHR)</li>
+        <li>Followed strict infection control protocols during all patient interactions</li>
+        <li>Helped transport patients to medical tests and procedures safely</li>
+      </ul>
+    </div>
+    <div class="exp-card reveal">
+      <div class="exp-header">
+        <div class="exp-role">Student Nurse Intern</div>
+        <span class="exp-badge badge-past">Past</span>
+      </div>
+      <div class="exp-org">Blue Wheel Hospital</div>
+      <div class="exp-period">June 2024 – December 2024 · Bhubaneswar</div>
+      <ul class="exp-bullets">
+        <li>Administered IV fluids, blood products, and medications to critically ill patients</li>
+        <li>Executed central line and arterial line insertions and other invasive procedures</li>
+        <li>Monitored vital signs and managed fluid and electrolyte balance</li>
+        <li>Performed cardiopulmonary resuscitation during emergency situations</li>
+        <li>Collected blood samples for laboratory testing to aid in diagnosis</li>
+        <li>Applied strict aseptic techniques to reduce infection risks</li>
+        <li>Cultivated a supportive environment prioritizing patient comfort and emotional well-being</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- SKILLS -->
+<section id="skills">
+  <div class="reveal">
+    <div class="section-label">Competencies</div>
+    <h2 class="section-title">Clinical Skills</h2>
+  </div>
+  <div class="skills-wrapper">
+    <div>
+      <div class="skill-category reveal">
+        <div class="skill-cat-title">Cardiac &amp; Respiratory</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Cardiac management</span>
+          <span class="skill-tag">Hemodynamic monitoring</span>
+          <span class="skill-tag">Defibrillation techniques</span>
+          <span class="skill-tag">ECG interpretation</span>
+          <span class="skill-tag">Pulse oximetry</span>
+          <span class="skill-tag">Cardiac device management</span>
+          <span class="skill-tag">Ventilator management</span>
+          <span class="skill-tag">Airway management</span>
+          <span class="skill-tag">Suctioning proficiency</span>
+        </div>
+      </div>
+      <div class="skill-category reveal">
+        <div class="skill-cat-title">Vascular &amp; Fluid</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Intravenous therapy</span>
+          <span class="skill-tag">Vascular access procedures</span>
+          <span class="skill-tag">Fluid management precision</span>
+          <span class="skill-tag">Thoracic drainage</span>
+        </div>
+      </div>
+      <div class="skill-category reveal">
+        <div class="skill-cat-title">Functional Duties</div>
+        <div class="skill-tags">
+          <span class="skill-tag">CPR &amp; emergency response</span>
+          <span class="skill-tag">Hemodialysis</span>
+          <span class="skill-tag">SLED</span>
+          <span class="skill-tag">CRRT</span>
+          <span class="skill-tag">Blood transfusion (PRBC, Plasma, Platelet)</span>
+          <span class="skill-tag">CVP monitoring</span>
+          <span class="skill-tag">Enteral nutrition</span>
+          <span class="skill-tag">TPN</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="skill-category reveal">
+        <div class="skill-cat-title">Patient Care</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Vital signs monitoring</span>
+          <span class="skill-tag">Patient education</span>
+          <span class="skill-tag">Emotional support</span>
+          <span class="skill-tag">Care planning</span>
+          <span class="skill-tag">Infection control</span>
+          <span class="skill-tag">Aseptic technique</span>
+          <span class="skill-tag">Wound dressing</span>
+          <span class="skill-tag">Foley's catheterization</span>
+          <span class="skill-tag">Ryle's tube insertion</span>
+        </div>
+      </div>
+      <div class="skill-category reveal">
+        <div class="skill-cat-title">Soft Skills</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Interpersonal communication</span>
+          <span class="skill-tag">Interdisciplinary teamwork</span>
+          <span class="skill-tag">Critical thinking</span>
+          <span class="skill-tag">Quality improvement</span>
+          <span class="skill-tag">EHR documentation</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- PROCEDURES -->
+<section id="procedures">
+  <div class="reveal">
+    <div class="section-label">Clinical Proficiency</div>
+    <h2 class="section-title">Procedures Seen &amp; Assisted</h2>
+  </div>
+  <div class="procedures-grid reveal">
+    <div class="procedure-item"><span class="procedure-dot"></span>Endotracheal Intubation</div>
+    <div class="procedure-item"><span class="procedure-dot"></span>ICD Removal</div>
+    <div class="procedure-item"><span class="procedure-dot"></span>Lumbar Puncture</div>
+    <div class="procedure-item"><span class="procedure-dot"></span>Endotracheal Extubating</div>
+    <div class="procedure-item"><span class="procedure-dot"></span>Jugular Catheterization</div>
+    <div class="procedure-item"><span class="procedure-dot"></span>Radial Artery Line Insertion</div>
+    <div class="procedure-item"><span class="procedure-dot"></span>Femoral Catheterization</div>
+    <div class="procedure-item"><span class="procedure-dot"></span>CPR &amp; Defibrillation</div>
+    <div class="procedure-item"><span class="procedure-dot"></span>Central Venous Catheterization</div>
+    <div class="procedure-item"><span class="procedure-dot"></span>Arterial Sheath Removal</div>
+    <div class="procedure-item"><span class="procedure-dot"></span>Inter-Costal Chest Tube Insertion</div>
+    <div class="procedure-item"><span class="procedure-dot"></span>Suctioning (Open &amp; Closed)</div>
+    <div class="procedure-item"><span class="procedure-dot"></span>Pleural Tapping</div>
+  </div>
+  <div style="margin-top: 4rem;" class="reveal">
+    <div class="section-label" style="margin-bottom: 1.5rem;">Equipment Proficiency</div>
+    <div class="equipment-grid">
+      <div class="equipment-card"><span class="equipment-icon">🫀</span>Cardiac Monitor</div>
+      <div class="equipment-card"><span class="equipment-icon">🌬️</span>Portable Ventilator</div>
+      <div class="equipment-card"><span class="equipment-icon">⚡</span>Defibrillator (Philips Biphasic)</div>
+      <div class="equipment-card"><span class="equipment-icon">📈</span>Pulse Oximeter</div>
+      <div class="equipment-card"><span class="equipment-icon">💉</span>Infusion Pump</div>
+      <div class="equipment-card"><span class="equipment-icon">💊</span>Syringe Pump</div>
+      <div class="equipment-card"><span class="equipment-icon">💨</span>Nebulizer</div>
+      <div class="equipment-card"><span class="equipment-icon">🔬</span>Suction Apparatus</div>
+      <div class="equipment-card"><span class="equipment-icon">🌡️</span>Steam Inhaler</div>
+      <div class="equipment-card"><span class="equipment-icon">🚨</span>Crash Trolley</div>
+      <div class="equipment-card"><span class="equipment-icon">📊</span>ECG Machines</div>
+      <div class="equipment-card"><span class="equipment-icon">🔦</span>Laryngoscope</div>
+      <div class="equipment-card"><span class="equipment-icon">😮‍💨</span>BIPAP Machines</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- GALLERY -->
+<section class="photo-section" id="gallery">
+  <div class="reveal">
+    <div class="section-label">Portfolio</div>
+    <h2 class="section-title">Gallery</h2>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: -1.5rem; margin-bottom: 0;">
+      Clinical settings, team moments, events :-)
+    </p>
+  </div>
+  
+  <div class="gallery-slider-wrapper reveal">
+    <!-- Left Slide Button -->
+    <button class="slider-btn left-btn" id="slide-left" aria-label="Slide left"><i class="fas fa-chevron-left"></i></button>
+    
+    <div class="gallery-track" id="gallery-track">
+      <!-- Picture 1 -->
+      <div class="gallery-item">
+        <!-- Add your image names here. The 'onerror' hides the broken image icon if the file isn't uploaded yet! -->
+        <img src="Gallery/1.jpeg" alt="Clinical setting" onerror="this.style.opacity='0'">
+        <div class="gallery-placeholder">
+          <span class="ph-icon">🏥</span><p>Add photo to Gallery folder</p>
+        </div>
+        <div class="gallery-overlay"><span class="gallery-caption">Care Time</span></div>
+      </div>
+
+      <!-- Picture 2 -->
+      <div class="gallery-item">
+        <img src="Gallery/3.jpeg" alt="Team" onerror="this.style.opacity='0'">
+        <div class="gallery-placeholder">
+          <span class="ph-icon">📸</span><p>Add photo to Gallery folder</p>
+        </div>
+        <div class="gallery-overlay"><span class="gallery-caption">Documentation</span></div>
+      </div>
+
+      <!-- Picture 3 -->
+      <div class="gallery-item">
+        <img src="Gallery/5.jpeg" alt="Events" onerror="this.style.opacity='0'">
+        <div class="gallery-placeholder">
+          <span class="ph-icon">📸</span><p>Add photo to Gallery folder</p>
+        </div>
+        <div class="gallery-overlay"><span class="gallery-caption">Team Work</span></div>
+      </div>
+
+      <!-- Picture 4 -->
+      <div class="gallery-item">
+        <img src="Gallery/6.jpeg" alt="ICU" onerror="this.style.opacity='0'">
+        <div class="gallery-placeholder">
+          <span class="ph-icon">📸</span><p>Add photo to Gallery folder</p>
+        </div>
+        <div class="gallery-overlay"><span class="gallery-caption">Continuing Ccare</span></div>
+      </div>
+
+      <!-- Picture 5 -->
+      <div class="gallery-item">
+        <img src="Gallery/8.jpeg" alt="Education" onerror="this.style.opacity='0'">
+        <div class="gallery-placeholder">
+          <span class="ph-icon">📸</span><p>Add photo to Gallery folder</p>
+        </div>
+        <div class="gallery-overlay"><span class="gallery-caption">Education</span></div>
+      </div>
+
+      <!-- Picture 6 (Proves the slider works!) -->
+      <div class="gallery-item">
+        <img src="Gallery/9.jpeg" alt="More Pictures" onerror="this.style.opacity='0'">
+        <div class="gallery-placeholder">
+          <span class="ph-icon">📸</span><p>Add photo to Gallery folder</p>
+        </div>
+        <div class="gallery-overlay"><span class="gallery-caption">Expertise</span></div>
+      </div>
+
+           <!-- Picture 7 -->
+      <div class="gallery-item">
+        <img src="Gallery/12.jpeg" alt="Education" onerror="this.style.opacity='0'">
+        <div class="gallery-placeholder">
+          <span class="ph-icon">📸</span><p>Add photo to Gallery folder</p>
+        </div>
+        <div class="gallery-overlay"><span class="gallery-caption">Brainstroming</span></div>
+      </div>
+
+      <!-- Picture 8 -->
+      <div class="gallery-item">
+        <img src="Gallery/14.jpeg" alt="More Pictures" onerror="this.style.opacity='0'">
+        <div class="gallery-placeholder">
+          <span class="ph-icon">📸</span><p>Add photo to Gallery folder</p>
+        </div>
+        <div class="gallery-overlay"><span class="gallery-caption">ICU Unit</span></div>
+      </div>
+            <!-- Picture 9 -->
+      <div class="gallery-item">
+        <img src="Gallery/16.jpeg" alt="Education" onerror="this.style.opacity='0'">
+        <div class="gallery-placeholder">
+          <span class="ph-icon">📸</span><p>Add photo to Gallery folder</p>
+        </div>
+        <div class="gallery-overlay"><span class="gallery-caption">Monitoring</span></div>
+      </div>
+
+      <!-- Picture 10 -->
+      <div class="gallery-item">
+        <img src="Gallery/17.jpeg" alt="More Pictures" onerror="this.style.opacity='0'">
+        <div class="gallery-placeholder">
+          <span class="ph-icon">📸</span><p>Add photo to Gallery folder</p>
+        </div>
+        <div class="gallery-overlay"><span class="gallery-caption">Continuing Monitoring</span></div>
+      </div>
+      
+      <!-- TO ADD MORE: Just copy and paste one of the <div class="gallery-item"> blocks above! -->
+      
+    </div>
+    
+    <!-- Right Slide Button -->
+    <button class="slider-btn right-btn" id="slide-right" aria-label="Slide right"><i class="fas fa-chevron-right"></i></button>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- EDUCATION + LANGUAGES -->
+<section id="education">
+  <div class="reveal">
+    <div class="section-label">Academic Background</div>
+    <h2 class="section-title">Education &amp; Languages</h2>
+  </div>
+  <div class="edu-card reveal" style="margin-bottom: 3rem;">
+    <div class="edu-icon-box">🎓</div>
+    <div>
+      <div class="edu-degree">Bachelor of Science in Nursing</div>
+      <div class="edu-school">Lord Jagannath Mission's College of Nursing</div>
+      <div class="edu-date">Bhubaneswar, Odisha · Graduated July 2025</div>
+    </div>
+  </div>
+  <div class="section-label reveal" style="margin-bottom: 1.5rem;">Languages</div>
+  <div class="lang-grid reveal">
+    <div class="lang-card">
+      <div class="lang-name">English</div>
+      <div class="lang-level">Full Professional</div>
+      <div class="lang-bar"><div class="lang-fill" data-width="90%" style="width: 0%;"></div></div>
+    </div>
+    <div class="lang-card">
+      <div class="lang-name">Hindi</div>
+      <div class="lang-level">Full Professional</div>
+      <div class="lang-bar"><div class="lang-fill" data-width="90%" style="width: 0%;"></div></div>
+    </div>
+    <div class="lang-card">
+      <div class="lang-name">Odia</div>
+      <div class="lang-level">Native / Bilingual</div>
+      <div class="lang-bar"><div class="lang-fill" data-width="100%" style="width: 0%;"></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- CONTACT -->
+<section class="contact-section" id="contact">
+  <div class="contact-glow"></div>
+  <div class="reveal">
+    <div class="section-label">Reach Out</div>
+    <h2 class="section-title">Let's Connect</h2>
+    <p style="color: var(--text-muted); max-width: 420px; margin: 0 auto 2rem; font-size: 0.95rem; line-height: 1.7;">
+      Open to new clinical opportunities, collaborations, or professional conversations.
+    </p>
+  </div>
+  <div class="contact-links reveal">
+    <a href="mailto:priyapayalb812@gmail.com" class="contact-link">
+      <span class="contact-link-icon">✉</span>
+      priyapayalb812@gmail.com
+    </a>
+    <a href="tel:+916371374018" class="contact-link">
+      <span class="contact-link-icon">📞</span>
+      +91 XXX-XXX-4018
+    </a>
+    <a href="https://www.linkedin.com/in/priyapayal-behera-8175a6384" target="_blank" class="contact-link">
+      <span class="contact-link-icon">in</span>
+      LinkedIn Profile
+    </a>
+    <a href="#" class="contact-link">
+      <span class="contact-link-icon">📍</span>
+      Bhubaneswar, Odisha 751021
+    </a>
+  </div>
+
+  <!-- ADDED YOUTUBE PROMO BANNER -->
+  <div class="yt-promo reveal">
+    <div class="yt-promo-icon"><i class="fab fa-youtube"></i></div>
+    <p class="yt-promo-text">
+      Want to stay updated with my healthcare journey, ICU tips, and hospital life in a fun & interactive way? <br><br>
+      <strong>Subscribe to my YouTube channel for free!</strong>
+    </p>
+    <!-- REPLACE 'YOUR_YOUTUBE_LINK_HERE' with her actual channel link -->
+    <a href="https://youtube.com/@payall-o3h?si=bFmuqW1DxSSFLcKM" target="_blank" class="yt-promo-btn">
+      <i class="fas fa-play"></i> Subscribe Now
+    </a>
+  </div>
+  <!-- -------------------------- -->
+
+</section>
+
+<div class="footer-bar">
+  <span>Priya Payal Behera · ICU Registered Nurse</span>
+  <span>Bhubaneswar, Odisha · 
+    <a href="https://youtube.com/@payall-o3h?si=bFmuqW1DxSSFLcKM" target="_blank" style="color: #ff0000; text-decoration: none; font-weight: 500; letter-spacing: 0.05em;">
+      <i class="fab fa-youtube"></i> YouTube
+    </a>
+  </span>
+</div>
+
+<script>
+  // ADDED INTERACTIVE ECG CANVAS LOGIC
+  const ecgCanvas = document.getElementById('ecg-canvas');
+  const ctx = ecgCanvas.getContext('2d');
+
+  function resizeEcgCanvas() {
+      ecgCanvas.width = window.innerWidth;
+      ecgCanvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resizeEcgCanvas);
+  resizeEcgCanvas();
+
+  let px = 0;
+  let py = ecgCanvas.height / 2;
+  let time = 0;
+  const speed = 3;
+
+  function drawECG() {
+      // Trail effect matching the theme's background
+      ctx.fillStyle = 'rgba(10, 22, 40, 0.05)'; 
+      ctx.fillRect(0, 0, ecgCanvas.width, ecgCanvas.height);
+
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+
+      px += speed;
+      time++;
+
+      let centerY = ecgCanvas.height / 2;
+      let y = centerY;
+
+      let cycle = time % 250;
+      
+      if (cycle > 200 && cycle < 205) {
+          y = centerY - 15;
+      } else if (cycle >= 205 && cycle < 210) {
+          y = centerY;
+      } else if (cycle >= 210 && cycle < 215) {
+          y = centerY + 20;
+      } else if (cycle >= 215 && cycle < 220) {
+          y = centerY - 120;
+      } else if (cycle >= 220 && cycle < 225) {
+          y = centerY + 30;
+      } else if (cycle >= 225 && cycle < 235) {
+          y = centerY;
+      } else if (cycle >= 235 && cycle < 245) {
+          y = centerY - 25;
+      }
+
+      if (y === centerY) {
+          y += (Math.random() - 0.5) * 3;
+      }
+
+      ctx.lineTo(px, y);
+      
+      // Matching the teal theme color
+      ctx.strokeStyle = '#4ecfa8';
+      ctx.lineWidth = 2.5;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#4ecfa8';
+      ctx.stroke();
+
+      py = y;
+
+      if (px > ecgCanvas.width) {
+          px = 0;
+          time = Math.floor(Math.random() * 50);
+      }
+
+      requestAnimationFrame(drawECG);
+  }
+  drawECG();
+
+  // CUSTOM CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursor-ring');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cursor.style.left = mx - 4 + 'px';
+    cursor.style.top = my - 4 + 'px';
+  });
+  function animRing() {
+    rx += (mx - rx) * 0.15;
+    ry += (my - ry) * 0.15;
+    ring.style.left = rx + 'px';
+    ring.style.top = ry + 'px';
+    requestAnimationFrame(animRing);
+  }
+  animRing();
+
+  // SCROLL REVEAL
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        entry.target.querySelectorAll('.lang-fill').forEach(bar => {
+          setTimeout(() => { bar.style.width = bar.dataset.width; }, 200);
+        });
+      }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => observer.observe(el));
+
+// GALLERY SLIDER LOGIC
+  const track = document.getElementById('gallery-track');
+  const leftBtn = document.getElementById('slide-left');
+  const rightBtn = document.getElementById('slide-right');
+
+  function updateSliderButtons() {
+    // Hide left button if at the start
+    if (track.scrollLeft <= 0) {
+      leftBtn.classList.add('disabled');
+    } else {
+      leftBtn.classList.remove('disabled');
+    }
+    // Hide right button if at the end (with a 2px buffer for pixel-rounding issues)
+    if (track.scrollLeft + track.clientWidth >= track.scrollWidth - 2) {
+      rightBtn.classList.add('disabled');
+    } else {
+      rightBtn.classList.remove('disabled');
+    }
+  }
+
+  // Check buttons on load and when scrolled
+  updateSliderButtons();
+  track.addEventListener('scroll', updateSliderButtons);
+  window.addEventListener('resize', updateSliderButtons);
+
+  // Scroll Left
+  leftBtn.addEventListener('click', () => {
+    track.scrollBy({ left: -320, behavior: 'smooth' });
+  });
+
+  // Scroll Right
+  rightBtn.addEventListener('click', () => {
+    track.scrollBy({ left: 320, behavior: 'smooth' });
+  });
+// TYPING EFFECT LOGIC
+  const rolesArray =["Registered Nurse (ICU)", "Compassionate Caregiver", "Critical Care Specialist"];
+  let roleIdx = 0;
+  let charIdx = 0;
+  const typedSpan = document.getElementById("typing-text");
+
+  function typeRole() {
+    if (charIdx < rolesArray[roleIdx].length) {
+      typedSpan.textContent += rolesArray[roleIdx].charAt(charIdx);
+      charIdx++;
+      setTimeout(typeRole, 70); // Typing speed
+    } else {
+      setTimeout(eraseRole, 2000); // Time to wait before erasing
+    }
+  }
+
+  function eraseRole() {
+    if (charIdx > 0) {
+      typedSpan.textContent = rolesArray[roleIdx].substring(0, charIdx - 1);
+      charIdx--;
+      setTimeout(eraseRole, 40); // Erasing speed
+    } else {
+      roleIdx++;
+      if (roleIdx >= rolesArray.length) roleIdx = 0;
+      setTimeout(typeRole, 500); // Delay before typing next word
+    }
+  }
+  // Start the typing effect 1 second after page loads
+  setTimeout(typeRole, 1000);
+</script>
+</body>
+</html>
